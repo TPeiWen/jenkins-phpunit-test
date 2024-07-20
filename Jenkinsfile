@@ -39,20 +39,6 @@ pipeline {
                 }
             }
         }
-        stage('Build') {
-            steps {
-                script {
-                    try {
-                        // Perform the build
-                        sh '#!/bin/sh -xe\ncomposer install'
-                    } catch (Exception e) {
-                        echo "Error during build: ${e.getMessage()}"
-                        currentBuild.result = 'FAILURE'
-                        throw e
-                    }
-                }
-            }
-        }
         stage('Test') {
             steps {
                 script {
@@ -76,7 +62,7 @@ pipeline {
                 try {
                     // Publish test results
                     node {
-                        junit 'tests/phpunit.xml'
+                        junit 'logs/unitreport.xml'
                     }
                 } catch (Exception e) {
                     echo "Error during post stage: ${e.getMessage()}"
