@@ -2,7 +2,7 @@ pipeline {
     agent {
         docker {
             image 'composer:latest'
-            args '-v /your/host/path:/your/container/path' // If you need to mount volumes
+            args '-u root:root' // Run as root to avoid permission issues, adjust as needed
         }
     }
     environment {
@@ -11,29 +11,59 @@ pipeline {
     stages {
         stage('Prepare') {
             steps {
-                // Clean workspace before starting
-                deleteDir()
-                // Install dependencies
-                sh '#!/bin/sh -xe\ncomposer install'
+                script {
+                    try {
+                        // Clean workspace before starting
+                        deleteDir()
+                        // Install dependencies
+                        sh '#!/bin/sh -xe\ncomposer install'
+                    } catch (Exception e) {
+                        echo "Error during preparation: ${e.getMessage()}"
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
             }
         }
         stage('Build') {
             steps {
-                // Perform the build
-                sh '#!/bin/sh -xe\ncomposer install'
+                script {
+                    try {
+                        // Perform the build
+                        sh '#!/bin/sh -xe\ncomposer install'
+                    } catch (Exception e) {
+                        echo "Error during build: ${e.getMessage()}"
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
             }
         }
         stage('Test') {
             steps {
-                // Run tests
-                sh '#!/bin/sh -xe\n./vendor/bin/phpunit --log-junit logs/unitreport.xml tests'
+                script {
+                    try {
+                        // Run tests
+                        sh '#!/bin/sh -xe\n./vendor/bin/phpunit --log-junit logs/unitreport.xml tests'
+                    } catch (Exception e) {
+                        echo "Error during testing: ${e.getMessage()}"
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
             }
         }
     }
     post {
         always {
-            // Publish test results
-            junit 'logs/unitreport.xml'
+            script {
+                try {
+                    // Publish test results
+                    junit 'logs/unitreport.xml'
+                } catch (Exception e) {
+                    echo "Error during post stage: ${e.getMessage()}"
+                }
+            }
         }
         success {
             echo 'Build succeeded!'
