@@ -9,12 +9,26 @@ pipeline {
         COMPOSER_HOME = '/root/composer' // Example environment variable
     }
     stages {
-        stage('Prepare') {
+        stage('Checkout') {
             steps {
                 script {
                     try {
                         // Clean workspace before starting
                         deleteDir()
+                        // Checkout the code from Git
+                        checkout scm
+                    } catch (Exception e) {
+                        echo "Error during checkout: ${e.getMessage()}"
+                        currentBuild.result = 'FAILURE'
+                        throw e
+                    }
+                }
+            }
+        }
+        stage('Prepare') {
+            steps {
+                script {
+                    try {
                         // Install dependencies
                         sh '#!/bin/sh -xe\ncomposer install'
                     } catch (Exception e) {
@@ -44,7 +58,9 @@ pipeline {
                 script {
                     try {
                         // Run tests
-                        sh '#!/bin/sh -xe\n./vendor/bin/phpunit --log-junit logs/unitreport.xml tests'
+                        sh '#!/bin/sh -xe\nmkdir -p logs\n./vendor/bin/phpunit --log-junit logs/unitreport.xml tests'
+                        // Verify if the report is generated
+                        sh 'ls -l logs/'
                     } catch (Exception e) {
                         echo "Error during testing: ${e.getMessage()}"
                         currentBuild.result = 'FAILURE'
