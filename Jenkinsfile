@@ -59,7 +59,9 @@ pipeline {
             script {
                 try {
                     // Publish test results
-                    junit 'logs/unitreport.xml'
+                    node {
+                        junit 'logs/unitreport.xml'
+                    }
                 } catch (Exception e) {
                     echo "Error during post stage: ${e.getMessage()}"
                 }
